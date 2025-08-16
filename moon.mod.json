@@ -1,0 +1,14 @@
+{
+  "name": "chaijie2018/wasm-validator",
+  "version": "0.1.0",
+  "readme": "README.md",
+  "repository": "https://github.com/chaijie2018/wasm-validator",
+  "license": "Apache-2.0",
+  "keywords": [
+    "WebAssembly",
+    "validator",
+    "AST"
+  ],
+  "description": "WebAssembly validator",
+  "source": "src"
+}

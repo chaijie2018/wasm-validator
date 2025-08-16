@@ -1,0 +1,5 @@
+{
+  "import": [
+    "chaijie2018/wasm-validator/src/syntax"
+  ]
+}
