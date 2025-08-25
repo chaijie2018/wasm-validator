@@ -1,6 +1,0 @@
-{
-  "name": "chaijie2018/wasm-validator/decode",
-  "import": [
-    "chaijie2018/wasm-validator/syntax"
-  ]
-}

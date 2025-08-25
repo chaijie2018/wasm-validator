@@ -1,4 +1,5 @@
 // Values and operators
+
 ///|
 pub enum Op[T1, T2, T3, T4] {
   I32(T1)
@@ -36,6 +37,7 @@ pub fn[T] type_of_vec(v : VecOp[T]) -> VecType {
 }
 
 // V128
+
 ///|
 pub enum V128LaneOp[T1, T2, T3, T4, T5, T6] {
   I8x16(T1)

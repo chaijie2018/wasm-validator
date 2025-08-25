@@ -169,7 +169,8 @@ pub fn op_ellipses_known(
   { ins: (Ellipses, known(ts1)), outs: (Ellipses, known(ts2)) }
 }
 
-///| String conversion functions for WebAssembly types
+///|
+/// String conversion functions for WebAssembly types
 fn string_of_num_type(t : NumType) -> String {
   match t {
     I32Type => "i32"
@@ -238,7 +239,8 @@ fn string_of_infer_types(ts : Array[ValueType?]) -> String {
   "[" + strings.join(" ") + "]"
 }
 
-///| Stack type checking functions for WebAssembly validation
+///|
+/// Stack type checking functions for WebAssembly validation
 fn eq_ty(t1 : ValueType?, t2 : ValueType?) -> Bool {
   match (t1, t2) {
     (Some(a), Some(b)) => a == b
@@ -285,7 +287,8 @@ fn array_take(arr : Array[ValueType?], n : Int) -> Array[ValueType?] {
   result
 }
 
-///| stack2 is the current actual stack state, stack1 is the one to be popped.
+///|
+/// stack2 is the current actual stack state, stack1 is the one to be popped.
 /// The tail element of the array is the top of the stack.
 /// 
 /// See the test function 'pop' below for an example of how to use this function.
@@ -328,7 +331,8 @@ test "pop" {
   inspect(arr, content="[Some(NumType(F32Type))]")
 }
 
-///| Push stack1 onto stack2.
+///|
+/// Push stack1 onto stack2.
 pub fn push(
   stack1 : InferResultType,
   stack2 : InferResultType,
@@ -479,7 +483,8 @@ pub fn lane_replaceop(vec : VecOp[V128ReplaceOp]) -> Int {
   }
 }
 
-///| Expressions
+///|
+/// Expressions
 pub fn check_pack(size : PackSize, t_size : Int) -> Unit raise {
   if packed_size(size) >= t_size {
     fail("invalid sign extension")
@@ -526,7 +531,8 @@ pub fn[T, P] check_memop(
   }
 }
 
-///| Conventions:
+///|
+/// Conventions:
 ///   c  : context
 ///   e  : instr
 ///   es : instr list
@@ -1051,7 +1057,11 @@ pub fn check_memory(c : Context, mem : Memory) -> Unit raise {
 }
 
 ///|
-pub fn check_elem_mode(c : Context, t : RefType, mode : SegmentMode) -> Unit raise {
+pub fn check_elem_mode(
+  c : Context,
+  t : RefType,
+  mode : SegmentMode,
+) -> Unit raise {
   match mode.it {
     Passive => ()
     Active({ index, offset }) => {
