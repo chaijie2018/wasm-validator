@@ -1,26 +1,26 @@
 ///|
 pub fn i32_const(n : Var) -> InstrType {
-  Const({ at: n.at, it: I32(n.it) })
+  Const(I32(n))
 }
 
 ///|
-pub fn i64_const(n : Phrase[Int64]) -> InstrType {
-  Const({ at: n.at, it: I64(n.it) })
+pub fn i64_const(n : Int64) -> InstrType {
+  Const(I64(n))
 }
 
 ///|
-pub fn f32_const(n : Phrase[Float]) -> InstrType {
-  Const({ at: n.at, it: F32(n.it) })
+pub fn f32_const(n : Float) -> InstrType {
+  Const(F32(n))
 }
 
 ///|
-pub fn f64_const(n : Phrase[Double]) -> InstrType {
-  Const({ at: n.at, it: F64(n.it) })
+pub fn f64_const(n : Double) -> InstrType {
+  Const(F64(n))
 }
 
 ///|
 pub fn v128_const(n : Vec) -> InstrType {
-  VecConst({ at: n.at, it: n.it })
+  VecConst(n)
 }
 
 ///|
@@ -34,14 +34,6 @@ pub fn ref_func(x : Var) -> InstrType {
 }
 
 // Control flow instructions
-///|
-pub let unreachable : InstrType = Unreachable
-
-///|
-pub let nop : InstrType = Nop
-
-///|
-pub let drop : InstrType = Drop
 
 ///|
 pub fn select(t : Array[ValueType]?) -> InstrType {
@@ -49,17 +41,17 @@ pub fn select(t : Array[ValueType]?) -> InstrType {
 }
 
 ///|
-pub fn block_(bt : BlockType, es : Array[Instr]) -> InstrType {
+pub fn block2(bt : BlockType, es : Array[InstrType]) -> InstrType {
   Block(bt, es)
 }
 
 ///|
-pub fn loop_(bt : BlockType, es : Array[Instr]) -> InstrType {
+pub fn loop2(bt : BlockType, es : Array[InstrType]) -> InstrType {
   Loop(bt, es)
 }
 
 ///|
-pub fn if_(bt : BlockType, es1 : Array[Instr], es2 : Array[Instr]) -> InstrType {
+pub fn if2(bt : BlockType, es1 : Array[InstrType], es2 : Array[InstrType]) -> InstrType {
   If(bt, es1, es2)
 }
 

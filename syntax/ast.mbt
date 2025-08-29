@@ -521,13 +521,13 @@ pub typealias (MemOp[VecType, PackSize], Int) as VecLaneOp
 // Expressions
 
 ///|
-pub typealias Phrase[Int] as Var
+pub typealias Int as Var
 
 ///|
-pub typealias Phrase[ValuesNum] as Num
+pub typealias ValuesNum as Num
 
 ///|
-pub typealias Phrase[ValuesVec] as Vec
+pub typealias ValuesVec as Vec
 
 ///|
 pub typealias Array[Int] as Name
@@ -539,7 +539,7 @@ pub enum BlockType {
 }
 
 ///|
-pub typealias Phrase[InstrType] as Instr
+pub typealias InstrType as Instr
 
 ///|
 pub enum InstrType {
@@ -548,9 +548,9 @@ pub enum InstrType {
   Nop // do nothing
   Drop // forget a value
   Select(Array[ValueType]?) // branchless conditional
-  Block(BlockType, Array[Instr]) // execute in sequence
-  Loop(BlockType, Array[Instr]) // loop header
-  If(BlockType, Array[Instr], Array[Instr]) // conditional
+  Block(BlockType, Array[InstrType]) // execute in sequence
+  Loop(BlockType, Array[InstrType]) // loop header
+  If(BlockType, Array[InstrType], Array[InstrType]) // conditional
 
   // Branch Instructions
   Br(Var) // break to n-th surrounding label
@@ -629,7 +629,7 @@ pub enum InstrType {
 // Globals & Functions
 
 ///|
-pub typealias Phrase[Array[Instr]] as Const
+pub typealias Array[InstrType] as Const
 
 ///|
 struct GlobalT {
@@ -638,35 +638,29 @@ struct GlobalT {
 }
 
 ///|
-pub typealias Phrase[GlobalT] as Global
+pub typealias GlobalT as Global
 
 ///|
-pub struct FuncT {
+pub struct Func {
   ftype : Var
   locals : Array[ValueType]
-  body : Array[Instr]
+  body : Array[InstrType]
 }
 
 ///|
-pub typealias Phrase[FuncT] as Func
+//pub typealias Phrase[FuncT] as Func
 
 // Tables & Memories
 
 ///|
-pub struct TableT {
+pub struct Table {
   ttype : TableType
 }
 
 ///|
-pub typealias Phrase[TableT] as Table
-
-///|
-pub struct MemoryT {
+pub struct Memory {
   mtype : MemoryType
 }
-
-///|
-pub typealias Phrase[MemoryT] as Memory
 
 ///|
 pub struct ActiveSegment {
@@ -675,38 +669,29 @@ pub struct ActiveSegment {
 }
 
 ///|
-pub enum SegmentModeT {
+pub enum SegmentMode {
   Passive
   Active(ActiveSegment)
   Declarative
 }
 
 ///|
-pub typealias Phrase[SegmentModeT] as SegmentMode
-
-///|
-pub struct ElemSegmentT {
+pub struct ElemSegment {
   etype : RefType
   einit : Array[Const]
   emode : SegmentMode
 }
 
 ///|
-pub typealias Phrase[ElemSegmentT] as ElemSegment
-
-///|
-pub struct DataSegmentT {
+pub struct DataSegment {
   dinit : String
   dmode : SegmentMode
 }
 
-///|
-pub typealias Phrase[DataSegmentT] as DataSegment
-
 // Modules
 
 ///|
-pub typealias Phrase[FuncType] as Type_
+pub typealias FuncType as Type_
 
 ///|
 enum ExportDescT {
@@ -717,7 +702,7 @@ enum ExportDescT {
 }
 
 ///|
-typealias Phrase[ExportDescT] as ExportDesc
+typealias ExportDescT as ExportDesc
 
 ///|
 struct ExportT {
@@ -726,7 +711,7 @@ struct ExportT {
 }
 
 ///|
-pub typealias Phrase[ExportT] as Export
+pub typealias ExportT as Export
 
 ///|
 pub struct ImportT {
@@ -736,10 +721,10 @@ pub struct ImportT {
 }
 
 ///|
-pub typealias Phrase[ImportT] as Import
+pub typealias ImportT as Import
 
 ///|
-enum ImportDescT {
+pub enum ImportDescT {
   FuncImport(Var)
   TableImport(TableType)
   MemoryImport(MemoryType)
@@ -747,7 +732,7 @@ enum ImportDescT {
 }
 
 ///|
-pub typealias Phrase[ImportDescT] as ImportDesc
+pub typealias ImportDescT as ImportDesc
 
 ///|
 struct StartT {
@@ -755,7 +740,7 @@ struct StartT {
 }
 
 ///|
-pub typealias Phrase[StartT] as Start
+pub typealias StartT as Start
 
 ///|
 pub struct ModuleT {
@@ -772,7 +757,7 @@ pub struct ModuleT {
 }
 
 ///|
-pub typealias Phrase[ModuleT] as Module_
+pub typealias ModuleT as Module_
 
 // Auxiliary functions
 
@@ -792,15 +777,15 @@ let empty_module : ModuleT = {
 
 ///|
 fn func_type_for(m : Module_, x : Var) -> FuncType {
-  let types = m.it.types
-  let index = x.it
-  types[index].it
+  let types = m.types
+  let index = x
+  types[index]
 }
 
 ///|
 fn import_type(m : Module_, im : Import) -> ExternType {
-  let idesc = im.it.idesc
-  match idesc.it {
+  let idesc = im.idesc
+  match idesc {
     FuncImport(x) => ExternFuncType(func_type_for(m, x))
     TableImport(t) => ExternTableType(t)
     MemoryImport(t) => ExternMemoryType(t)
@@ -810,35 +795,35 @@ fn import_type(m : Module_, im : Import) -> ExternType {
 
 ///|
 pub fn export_type(m : Module_, ex : Export) -> ExternType {
-  let edesc = ex.it.edesc
-  let its = m.it.imports.map(fn(im) { import_type(m, im) })
-  match edesc.it {
+  let edesc = ex.edesc
+  let its = m.imports.map(fn(im) { import_type(m, im) })
+  match edesc {
     FuncExport(x) => {
       let import_funcs = funcs(its)
-      let module_funcs = m.it.funcs.map(fn(f) { func_type_for(m, f.it.ftype) })
+      let module_funcs = m.funcs.map(fn(f) { func_type_for(m, f.ftype) })
       let all_funcs = [..import_funcs, ..module_funcs]
-      let index = x.it
+      let index = x
       ExternFuncType(all_funcs[index])
     }
     TableExport(x) => {
       let import_tables = tables(its)
-      let module_tables = m.it.tables.map(fn(t) { t.it.ttype })
+      let module_tables = m.tables.map(fn(t) { t.ttype })
       let all_tables = [..import_tables, ..module_tables]
-      let index = x.it
+      let index = x
       ExternTableType(all_tables[index])
     }
     MemoryExport(x) => {
       let import_memories = memories(its)
-      let module_memories = m.it.memories.map(fn(mem) { mem.it.mtype })
+      let module_memories = m.memories.map(fn(mem) { mem.mtype })
       let all_memories = [..import_memories, ..module_memories]
-      let index = x.it
+      let index = x
       ExternMemoryType(all_memories[index])
     }
     GlobalExport(x) => {
       let import_globals = globals(its)
-      let module_globals = m.it.globals.map(fn(g) { g.it.gtype })
+      let module_globals = m.globals.map(fn(g) { g.gtype })
       let all_globals = [..import_globals, ..module_globals]
-      let index = x.it
+      let index = x
       ExternGlobalType(all_globals[index])
     }
   }

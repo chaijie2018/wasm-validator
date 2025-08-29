@@ -100,7 +100,7 @@ fn labels(s : Set[Int]) -> FreeVars {
 
 ///|
 fn var(x : Var) -> Set[Int] {
-  Set::from_array([x.it])
+  Set::from_array([x])
 }
 
 ///|
@@ -138,7 +138,7 @@ fn block_type(bt : BlockType) -> FreeVars {
 
 ///|
 fn instr(e : Instr) -> FreeVars {
-  match e.it {
+  match e {
     Unreachable => empty_free_vars
     Nop => empty_free_vars
     Drop => empty_free_vars
@@ -208,24 +208,24 @@ fn instr(e : Instr) -> FreeVars {
 }
 
 ///|
-fn block(es : Array[Instr]) -> FreeVars {
+fn block(es : Array[InstrType]) -> FreeVars {
   let free = list(instr, es)
   { ..free, labels: shift(free.labels) }
 }
 
 ///|
 fn const_expr(c : Const) -> FreeVars {
-  block(c.it)
+  block(c)
 }
 
 ///|
 fn free_global(g : Global) -> FreeVars {
-  const_expr(g.it.ginit)
+  const_expr(g.ginit)
 }
 
 ///|
 fn free_func(f : Func) -> FreeVars {
-  let block_free = block(f.it.body)
+  let block_free = block(f.body)
   { ..block_free, locals: Set::new() }
 }
 
@@ -241,22 +241,22 @@ fn free_memory(m : Memory) -> FreeVars {
 
 ///|
 fn segment_mode(free_fn : (Set[Int]) -> FreeVars, m : SegmentMode) -> FreeVars {
-  match m.it {
+  match m {
     Passive => empty_free_vars
     Active({ index, offset }) =>
-      free_fn(Set::from_array([index.it])) + const_expr(offset)
+      free_fn(Set::from_array([index])) + const_expr(offset)
     Declarative => empty_free_vars
   }
 }
 
 ///|
 fn free_elem(s : ElemSegment) -> FreeVars {
-  list(const_expr, s.it.einit) + segment_mode(free_tables, s.it.emode)
+  list(const_expr, s.einit) + segment_mode(free_tables, s.emode)
 }
 
 ///|
 fn free_data(s : DataSegment) -> FreeVars {
-  segment_mode(free_memories, s.it.dmode)
+  segment_mode(free_memories, s.dmode)
 }
 
 ///|
@@ -266,7 +266,7 @@ fn free_type_(t : Type_) -> FreeVars {
 
 ///|
 fn export_desc(d : ExportDesc) -> FreeVars {
-  match d.it {
+  match d {
     FuncExport(x) => free_funcs(var(x))
     TableExport(x) => free_tables(var(x))
     MemoryExport(x) => free_memories(var(x))
@@ -276,12 +276,12 @@ fn export_desc(d : ExportDesc) -> FreeVars {
 
 ///|
 fn free_export(e : Export) -> FreeVars {
-  export_desc(e.it.edesc)
+  export_desc(e.edesc)
 }
 
 ///|
 pub fn import_desc(d : ImportDesc) -> FreeVars {
-  match d.it {
+  match d {
     FuncImport(x) => types(var(x))
     TableImport(_) => empty_free_vars
     MemoryImport(_) => empty_free_vars
@@ -291,24 +291,24 @@ pub fn import_desc(d : ImportDesc) -> FreeVars {
 
 ///|
 pub fn free_import(i : Import) -> FreeVars {
-  import_desc(i.it.idesc)
+  import_desc(i.idesc)
 }
 
 ///|
 pub fn free_start(s : Start) -> FreeVars {
-  free_funcs(var(s.it.sfunc))
+  free_funcs(var(s.sfunc))
 }
 
 ///|
 pub fn module_(m : Module_) -> FreeVars {
-  list(free_type_, m.it.types)
-  .union(list(free_global, m.it.globals))
-  .union(list(free_table, m.it.tables))
-  .union(list(free_memory, m.it.memories))
-  .union(list(free_func, m.it.funcs))
-  .union(opt(free_start, m.it.start))
-  .union(list(free_elem, m.it.elems))
-  .union(list(free_data, m.it.datas))
-  .union(list(free_import, m.it.imports))
-  .union(list(free_export, m.it.exports))
+  list(free_type_, m.types)
+  .union(list(free_global, m.globals))
+  .union(list(free_table, m.tables))
+  .union(list(free_memory, m.memories))
+  .union(list(free_func, m.funcs))
+  .union(opt(free_start, m.start))
+  .union(list(free_elem, m.elems))
+  .union(list(free_data, m.datas))
+  .union(list(free_import, m.imports))
+  .union(list(free_export, m.exports))
 }

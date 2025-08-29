@@ -19,9 +19,9 @@ pub enum RefType {
 
 ///|
 pub enum ValueType {
-  NumType(NumType)
-  VecType(VecType)
-  RefType(RefType)
+  Num(NumType)
+  Vec(VecType)
+  Ref(RefType)
 } derive(Eq, Show)
 
 ///|
@@ -125,7 +125,7 @@ pub fn vec_size(t : VecType) -> Int {
 ///|
 pub fn is_num_type(t : ValueType) -> Bool {
   match t {
-    NumType(_) => true
+    Num(_) => true
     _ => false
   }
 }
@@ -133,7 +133,7 @@ pub fn is_num_type(t : ValueType) -> Bool {
 ///|
 pub fn is_vec_type(t : ValueType) -> Bool {
   match t {
-    VecType(_) => true
+    Vec(_) => true
     _ => false
   }
 }
@@ -141,7 +141,7 @@ pub fn is_vec_type(t : ValueType) -> Bool {
 ///|
 pub fn is_ref_type(t : ValueType) -> Bool {
   match t {
-    RefType(_) => true
+    Ref(_) => true
     _ => false
   }
 }
