@@ -19,8 +19,8 @@ pub fn f64_const(n : Double) -> InstrType {
 }
 
 ///|
-pub fn v128_const(n : Vec) -> InstrType {
-  VecConst(n)
+pub fn v128_const(n : String) -> InstrType {
+  VecConst(V128(n))
 }
 
 ///|
@@ -1223,4 +1223,104 @@ pub let i32x4_trunc_sat_f64x2_u_zero : InstrType = VecConvert(V128(I32x4(TruncSa
 
 ///|
 pub let i32x4_extmul_low_i16x8_s : InstrType = VecBinary(V128(I32x4(ExtMulLowS)))
+let i32x4_extmul_high_i16x8_s : InstrType = VecBinary(V128 (I32x4(ExtMulHighS)))
+let i32x4_extmul_low_i16x8_u : InstrType = VecBinary(V128(I32x4(ExtMulLowU)))
+let i32x4_extmul_high_i16x8_u : InstrType = VecBinary(V128(I32x4(ExtMulHighU)))
+let i32x4_extadd_pairwise_i16x8_s : InstrType = VecConvert(V128(I32x4(ExtAddPairwiseS)))
+let i32x4_extadd_pairwise_i16x8_u : InstrType = VecConvert(V128(I32x4(ExtAddPairwiseU)))
 
+let i64x2_splat : InstrType = VecSplat(V128(I64x2(Splat)))
+fn i64x2_extract_lane(i : Int) -> InstrType{
+  VecExtract(V128(I64x2(Extract(i, ()))))
+} 
+fn i64x2_replace_lane(i : Int) -> InstrType{
+  VecReplace(V128(I64x2(Replace(i))))
+} 
+let i64x2_extend_low_i32x4_s : InstrType = VecConvert(V128(I64x2(ExtendLowS)))
+let i64x2_extend_high_i32x4_s : Instr = VecConvert(V128(I64x2(ExtendHighS)))
+let i64x2_extend_low_i32x4_u : InstrType = VecConvert(V128(I64x2(ExtendLowU)))
+let i64x2_extend_high_i32x4_u : InstrType = VecConvert(V128(I64x2(ExtendHighU)))
+let i64x2_eq : InstrType = VecCompare(V128(I64x2(Eq)))
+let i64x2_ne : InstrType = VecCompare(V128(I64x2(Ne)))
+let i64x2_lt_s : InstrType = VecCompare(V128(I64x2(LtS)))
+let i64x2_le_s : InstrType = VecCompare(V128(I64x2(LeS)))
+let i64x2_gt_s : InstrType = VecCompare(V128(I64x2(GtS)))
+let i64x2_ge_s : InstrType = VecCompare(V128(I64x2(GeS)))
+let i64x2_abs : InstrType = VecUnary(V128 (I64x2(Abs)))
+let i64x2_neg : InstrType = VecUnary(V128 (I64x2(Neg)))
+let i64x2_bitmask : InstrType = VecBitmask(V128 (I64x2(Bitmask)))
+let i64x2_all_true : InstrType = VecTest(V128(I64x2(AllTrue)))
+let i64x2_add : InstrType = VecBinary(V128 (I64x2(Add)))
+let i64x2_sub : InstrType = VecBinary(V128 (I64x2(Sub)))
+let i64x2_mul : InstrType = VecBinary(V128(I64x2(Mul)))
+let i64x2_shl : InstrType = VecShift(V128(I64x2(Shl)))
+let i64x2_shr_s : InstrType = VecShift(V128(I64x2(ShrS)))
+let i64x2_shr_u : InstrType = VecShift(V128(I64x2(ShrU)))
+let i64x2_extmul_low_i32x4_s : InstrType = VecBinary(V128 (I64x2(ExtMulLowS)))
+let i64x2_extmul_high_i32x4_s : InstrType = VecBinary(V128 (I64x2(ExtMulHighS)))
+let i64x2_extmul_low_i32x4_u : InstrType = VecBinary(V128 (I64x2(ExtMulLowU)))
+let i64x2_extmul_high_i32x4_u : InstrType = VecBinary(V128 (I64x2(ExtMulHighU)))
+
+let f32x4_splat : InstrType = VecSplat(V128(F32x4(Splat)))
+fn f32x4_extract_lane(i : Int) -> InstrType{
+  VecExtract(V128 (F32x4(Extract(i, ()))))
+} 
+fn f32x4_replace_lane(i : Int) -> InstrType{
+  VecReplace(V128 (F32x4(Replace(i))))
+} 
+let f32x4_eq : InstrType = VecCompare(V128(F32x4(Eq)))
+let f32x4_ne : InstrType = VecCompare(V128(F32x4(Ne)))
+let f32x4_lt : InstrType = VecCompare(V128(F32x4(Lt)))
+let f32x4_le : InstrType = VecCompare(V128(F32x4(Le)))
+let f32x4_gt : InstrType = VecCompare(V128(F32x4(Gt)))
+let f32x4_ge : InstrType = VecCompare(V128(F32x4(Ge)))
+let f32x4_abs : InstrType = VecUnary(V128(F32x4(Abs)))
+let f32x4_neg : InstrType = VecUnary(V128(F32x4(Neg)))
+let f32x4_sqrt : InstrType = VecUnary(V128(F32x4(Sqrt)))
+let f32x4_ceil : InstrType = VecUnary(V128(F32x4(Ceil)))
+let f32x4_floor : InstrType = VecUnary(V128(F32x4(Floor)))
+let f32x4_trunc : InstrType = VecUnary(V128(F32x4(Trunc)))
+let f32x4_nearest : InstrType = VecUnary(V128(F32x4(Nearest)))
+let f32x4_add : InstrType = VecBinary(V128(F32x4(Add)))
+let f32x4_sub : InstrType = VecBinary(V128(F32x4(Sub)))
+let f32x4_mul : InstrType = VecBinary(V128(F32x4(Mul)))
+let f32x4_div : InstrType = VecBinary(V128(F32x4(Div)))
+let f32x4_min : InstrType = VecBinary(V128(F32x4(Min)))
+let f32x4_max : InstrType = VecBinary(V128(F32x4(Max)))
+let f32x4_pmin : InstrType = VecBinary(V128(F32x4(Pmin)))
+let f32x4_pmax : InstrType = VecBinary(V128(F32x4(Pmax)))
+let f32x4_demote_f64x2_zero : InstrType = VecConvert(V128(F32x4(DemoteZeroF64x2)))
+let f32x4_convert_i32x4_s : InstrType = VecConvert(V128(F32x4(ConvertSI32x4)))
+let f32x4_convert_i32x4_u : InstrType = VecConvert(V128(F32x4(ConvertUI32x4)))
+
+let f64x2_splat : InstrType = VecSplat(V128(F64x2(Splat)))
+fn f64x2_extract_lane(i : Int) -> InstrType{
+  VecExtract(V128 (F64x2(Extract(i, ()))))
+} 
+fn f64x2_replace_lane(i : Int) -> InstrType{
+  VecReplace(V128 (F64x2(Replace(i))))
+} 
+let f64x2_eq : InstrType = VecCompare(V128(F64x2(Eq)))
+let f64x2_ne : InstrType = VecCompare(V128(F64x2(Ne)))
+let f64x2_lt : InstrType = VecCompare(V128(F64x2(Lt)))
+let f64x2_le : InstrType = VecCompare(V128(F64x2(Le)))
+let f64x2_gt : InstrType = VecCompare(V128(F64x2(Gt)))
+let f64x2_ge : InstrType = VecCompare(V128(F64x2(Ge)))
+let f64x2_neg : InstrType = VecUnary(V128(F64x2(Neg)))
+let f64x2_sqrt : InstrType = VecUnary(V128(F64x2(Sqrt)))
+let f64x2_ceil : InstrType = VecUnary(V128(F64x2(Ceil)))
+let f64x2_floor : InstrType = VecUnary(V128(F64x2(Floor)))
+let f64x2_trunc : InstrType = VecUnary(V128(F64x2(Trunc)))
+let f64x2_nearest : InstrType = VecUnary(V128(F64x2(Nearest)))
+let f64x2_add : InstrType = VecBinary(V128(F64x2(Add)))
+let f64x2_sub : InstrType = VecBinary(V128(F64x2(Sub)))
+let f64x2_mul : InstrType = VecBinary(V128(F64x2(Mul)))
+let f64x2_div : InstrType = VecBinary(V128(F64x2(Div)))
+let f64x2_min : InstrType = VecBinary(V128(F64x2(Min)))
+let f64x2_max : InstrType = VecBinary(V128(F64x2(Max)))
+let f64x2_abs : InstrType = VecUnary(V128(F64x2(Abs)))
+let f64x2_pmin : InstrType = VecBinary(V128(F64x2(Pmin)))
+let f64x2_pmax : InstrType = VecBinary(V128(F64x2(Pmax)))
+let f64x2_promote_low_f32x4 : InstrType = VecConvert(V128(F64x2(PromoteLowF32x4)))
+let f64x2_convert_low_i32x4_s : InstrType = VecConvert(V128(F64x2(ConvertSI32x4)))
+let f64x2_convert_low_i32x4_u : InstrType = VecConvert(V128(F64x2(ConvertUI32x4)))
