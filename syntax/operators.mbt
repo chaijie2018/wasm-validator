@@ -19,7 +19,7 @@ pub fn f64_const(n : Double) -> InstrType {
 }
 
 ///|
-pub fn v128_const(n : String) -> InstrType {
+pub fn v128_const(n : Bytes) -> InstrType {
   VecConst(V128(n))
 }
 
@@ -36,22 +36,22 @@ pub fn ref_func(x : Var) -> InstrType {
 // Control flow instructions
 
 ///|
-pub fn select(t : Array[ValueType]?) -> InstrType {
+pub fn select(t : @list.List[ValueType]?) -> InstrType {
   Select(t)
 }
 
 ///|
-pub fn block2(bt : BlockType, es : Array[InstrType]) -> InstrType {
+pub fn block2(bt : BlockType, es : @list.List[InstrType]) -> InstrType {
   Block(bt, es)
 }
 
 ///|
-pub fn loop2(bt : BlockType, es : Array[InstrType]) -> InstrType {
+pub fn loop2(bt : BlockType, es : @list.List[InstrType]) -> InstrType {
   Loop(bt, es)
 }
 
 ///|
-pub fn if2(bt : BlockType, es1 : Array[InstrType], es2 : Array[InstrType]) -> InstrType {
+pub fn if2(bt : BlockType, es1 : @list.List[InstrType], es2 : @list.List[InstrType]) -> InstrType {
   If(bt, es1, es2)
 }
 
@@ -66,7 +66,7 @@ pub fn br_if(x : Var) -> InstrType {
 }
 
 ///|
-pub fn br_table(xs : Array[Var], x : Var) -> InstrType {
+pub fn br_table(xs : @list.List[Var], x : Var) -> InstrType {
   BrTable(xs, x)
 }
 

@@ -1,13 +1,13 @@
 // Decoding stream
 ///|
 pub struct Stream {
-  name : String
-  bytes : String  
+  name : Bytes
+  bytes : Bytes  
   pos : Ref[Int]
 }
 
 ///|
-pub fn stream(name : String, bs : String) -> Stream {
+pub fn stream(name : Bytes, bs : Bytes) -> Stream {
   { name, bytes: bs, pos: { val: 0 } }
 }
 
@@ -49,17 +49,17 @@ pub fn skip(n : Int, s : Stream) -> Unit raise {
 }
 
 ///|
-pub fn read(s : Stream) -> Int {
+pub fn read(s : Stream) -> Byte {
   s.bytes[s.pos.val]
 }
 
 ///|
-pub fn peek2(s : Stream) -> Int? {
+pub fn peek2(s : Stream) -> Byte? {
   if eos(s) { None } else { Some(read(s)) }
 }
 
 ///|
-pub fn get(s : Stream) -> Int raise {
+pub fn get(s : Stream) -> Byte raise {
   check(1, s)
   let b = read(s)
   skip(1, s)
@@ -67,10 +67,10 @@ pub fn get(s : Stream) -> Int raise {
 }
 
 ///|
-pub fn get_string(n : Int, s : Stream) -> String raise {
+pub fn get_string(n : Int, s : Stream) -> Bytes raise {
   let i = pos(s)
   skip(n, s)
-  s.bytes.substring(start=i, end=i + n)
+  s.bytes[i:i + n].to_bytes()
 }
 
 // Error handling helper functions
@@ -106,7 +106,7 @@ pub fn[T] guard2(
 
 ///|
 pub fn expect(b : Int, s : Stream, msg : String) -> Unit raise {
-  let result = guard2(get, s)
+  let result = guard2(get, s).to_int()
   let bool =  result == b
   require2(bool, s, pos(s) - 1, msg)
 }
@@ -123,17 +123,13 @@ pub fn illegal2(s : Stream, pos : Int, b : Int, n : Int64) -> String {
 
 ///|
 pub fn[T] at(f : (Stream) -> T raise?, s : Stream) -> T raise? {
-  let left = pos(s)
-  let x = f(s)
-  let right = pos(s)
-  // { at: region(s, left, right), it: x }
-  x
+  f(s)
 }
 
 // Generic value readers
 ///|
 pub fn byte(s : Stream) -> Int raise {
-  guard2(get, s)
+  guard2(get, s).to_int()
 }
 
 ///|
@@ -181,7 +177,7 @@ pub fn sN(n : Int, s : Stream) -> Int64 raise {
   fn decode(n : Int, s : Stream) -> Int64 raise {
     require2(n > 0, s, pos(s), "integer representation too long")
     let b = byte(s)
-    let mask = (-1) << (n - 1) & 0x7f
+    let mask = ((-1) << (n - 1)) & 0x7f
     let bool = n >= 7 || (b & mask) == 0 || (b & mask) == mask
     require2(bool, s, pos(s) - 1, "integer too large")
     let x = (b & 0x7f).to_int64()
@@ -241,7 +237,7 @@ pub fn f64(s : Stream) -> Double raise {
 }
 
 ///|
-pub fn v128(s : Stream) -> String raise {
+pub fn v128(s : Stream) -> Bytes raise {
   guard2(fn(s) { get_string(vec_size(V128Type), s) }, s)
 }
 
@@ -262,37 +258,24 @@ pub fn bool(s : Stream) -> Bool raise {
 }
 
 ///|
-pub fn string(s : Stream) -> String raise {
+pub fn string(s : Stream) -> Bytes raise {
   let n = len32(s)
   guard2(fn(s) { get_string(n, s) }, s)
 }
 
 ///|
-pub fn[T] list2(f:(Stream) -> T raise, n : Int, s : Stream) -> Array[T] raise {
-  let result = []
-  for i = 0; i < n; i = i + 1 {
-    result.push(f(s))
-  }
-  result
+pub fn[T] list2(f:(Stream) -> T raise, n : Int, s : Stream) -> @list.List[T] raise {
+  @list.repeat(n, f(s))
 }
 
 ///|
-pub fn[T] opt2(f : (Stream) -> T raise, b : Bool, s : Stream) -> T? raise {
-  if b {
-    Some(f(s))
-  } else {
-    None
-  }
-}
-
-///|
-pub fn name(s : Stream) -> String raise {
+pub fn name(s : Stream) -> Bytes raise {
   // For simplicity, assuming UTF-8 validation is built into string handling
   string(s)
 }
 
 ///|
-pub fn[T] sized(f : (Int, Stream) -> Array[T] raise, s : Stream) -> Array[T] raise {
+pub fn[T] sized(f : (Int, Stream) -> T raise, s : Stream) -> T raise {
   let size = len32(s)
   let start = pos(s)
   let x = f(size, s)
@@ -368,14 +351,21 @@ pub fn value_type(s : Stream) -> ValueType raise {
   )
 }
 
+fn[T] opt2(f : (Stream) -> T raise, b : Bool, s : Stream) -> T? raise {
+  if b {
+    Some(f(s))
+  } else {
+    None
+  }
+}
 ///|
-pub fn[T] vec(f:(Stream) -> T raise, s : Stream) -> Array[T] raise {
+pub fn[T] vec(f : (Stream) -> T raise, s : Stream) -> @list.List[T] raise {
   let n = len32(s)
   list2(f, n, s)
 }
 
 ///|
-pub fn result_type(s : Stream) -> Array[ValueType] raise {
+pub fn result_type(s : Stream) -> @list.List[ValueType] raise {
   vec(value_type, s)
 }
 
@@ -510,7 +500,7 @@ pub fn instr2(s : Stream) -> InstrType raise {
         }
         _ => {
           end2(s)
-          if2(bt, es1, [])
+          if2(bt, es1, @list.empty())
         }
       }
     }
@@ -1146,23 +1136,21 @@ pub fn instr2(s : Stream) -> InstrType raise {
   }
 }
 
-pub fn instr_block(s : Stream) -> Array[InstrType] raise {
-  instr_block_helper(s, []).rev()
+pub fn instr_block(s : Stream) -> @list.List[InstrType] raise {
+  instr_block_helper(s, @list.empty()).rev()
 }
 
-fn instr_block_helper(s : Stream, acc : Array[InstrType]) -> Array[InstrType] raise {
+fn instr_block_helper(s : Stream, acc : @list.List[InstrType]) -> @list.List[InstrType] raise {
   match peek2(s) {
     None | Some(0x05) | Some(0x0b) => acc
     _ => {
-      let pos_val = pos(s)
       let e = instr2(s)
-      // let annotated = region(s, pos_val, pos_val)
-      instr_block_helper(s, [..acc, e])
+      instr_block_helper(s, acc.concat(@list.singleton(e)))
     }
   }
 }
 
-pub fn const2(s : Stream) -> Array[InstrType] raise {
+pub fn const2(s : Stream) -> @list.List[InstrType] raise {
   let c = at(instr_block, s)
   end2(s)
   c
@@ -1211,10 +1199,10 @@ pub fn id(s : Stream) -> SectionId? raise {
 ///|  
 pub fn[T] section_with_size(
   tag : SectionId,
-  f : (Int, Stream) -> Array[T] raise,
-  default : Array[T],
+  f : (Int, Stream) -> T raise,
+  default : T,
   s : Stream
-) -> Array[T] raise {
+) -> T raise {
   match id(s) {
     Some(tag_found) if tag_found == tag => {
       guard2(fn(s) { skip(1, s) }, s)
@@ -1227,10 +1215,10 @@ pub fn[T] section_with_size(
 ///|  
 pub fn[T] section(
   tag : SectionId,
-  f : (Stream) -> Array[T] raise,
-  default : Array[T],
+  f : (Stream) -> T raise,
+  default : T,
   s : Stream,
-) -> Array[T] raise {
+) -> T raise {
   section_with_size(tag, fn(_, s) { f(s) }, default, s)
 }  
 
@@ -1238,4 +1226,403 @@ pub fn[T] section(
 ///|  
 pub fn type2(s : Stream) -> FuncType raise {  
   at(func_type, s)  
+}
+
+fn type_section(s : Stream) -> @list.List[FuncType] raise {
+  section(TypeSection, vec(type2, _) , @list.empty(), s)
+}
+
+///|
+/// Import section
+fn import_desc2(s : Stream) -> ImportDesc raise{
+  match byte(s) {
+    0x00 => FuncImport(at(var2, s))
+    0x01 => TableImport(table_type(s))
+    0x02 => MemoryImport(memory_type(s))
+    0x03 => GlobalImport(global_type(s))
+    _ => fail("malformed import kind")
+  }
+}
+
+fn import2(s : Stream) -> Import raise {
+  let module_name = name(s)
+  let item_name = name(s)
+  let idesc = at(import_desc2, s)
+  { module_name, item_name, idesc }
+}
+
+fn import_section(s : Stream) -> @list.List[Import] raise {
+  let default = @list.default()
+  section(ImportSection, vec(import2, _), default, s)
+}
+
+///|
+/// Function section
+
+fn func_section(s : Stream) -> @list.List[Var] raise {
+  let default = @list.default()
+  section(FuncSection, vec(var2, _), default, s)
+}
+
+///|
+/// Table section
+
+fn table2(s : Stream) -> Table raise {
+  let ttype = table_type(s)
+  { ttype }
+}
+
+fn table_section(s : Stream) -> @list.List[Table] raise {
+  let default = @list.default()
+  section(TableSection, vec(table2, _), default, s)
+}
+
+///|
+/// Memory section
+
+fn memory2(s : Stream) -> Memory raise{
+  let mtype = memory_type(s)
+  { mtype }
+}
+
+fn memory_section(s : Stream) -> @list.List[Memory] raise {
+  let default = @list.default()
+  section(MemorySection, vec(memory2, _), default, s)
+}
+
+///|
+/// Global section
+
+fn global2(s : Stream) -> Global raise{
+  let gtype = global_type(s)
+  let ginit = const2(s)
+  { gtype, ginit }
+}
+
+fn global_section(s : Stream) -> @list.List[Global] raise {
+  let default = @list.default()
+  section(GlobalSection, vec(global2, _), default, s)
+}
+
+///|
+/// Export section
+
+fn export_desc2(s : Stream) -> ExportDesc raise {
+  match byte(s) {
+    0x00 => FuncExport(var2(s))
+    0x01 => TableExport(var2(s))
+    0x02 => MemoryExport(var2(s))
+    0x03 => GlobalExport(var2(s))
+    _ => fail("malformed export kind")
+  }
+}
+
+fn export(s : Stream) -> Export raise {
+  let name = name(s)
+  let edesc = export_desc2(s)
+  { name, edesc }
+}
+
+fn export_section(s : Stream) -> @list.List[Export] raise {
+  let default = @list.default()
+  section(ExportSection, vec(export, _), default, s)
+}
+
+///|
+/// Start section
+
+fn start(s : Stream) -> Start raise {
+  let sfunc = var2(s)
+  { sfunc }
+}
+
+fn start_section(s : Stream) -> Start? raise {
+  section(StartSection, opt2(start, true, _), None, s)
+}
+
+///|
+/// Code section
+
+fn local2(s : Stream) -> (Int, ValueType) raise{
+  let n = u32(s)
+  let t = value_type(s)
+  (n, t)
+}
+
+fn locals2(s : Stream) -> @list.List[ValueType] raise {
+  let start_pos = pos(s)
+  let nts = vec(local2, s)
+  let ns = nts.map((n) => { n.0.to_int64() })
+  let total_locals = ns.fold(init=0L, (sum, elem) => sum + elem)
+  require2(total_locals < 0x1_0000_0000L, s, start_pos, "too many locals")
+  nts.flat_map((nt) => { @list.from_array(Array::make(nt.0, nt.1)) })
+}
+
+fn code(_: Int, s : Stream) -> Func raise {
+  let locals = locals2(s)
+  let body = instr_block(s)
+  end2(s)
+  { locals, body, ftype: -1 }
+}
+
+fn code_section(s : Stream) -> @list.List[Func] raise {
+  let default = @list.default()
+  section(CodeSection, vec(fn (_) { sized(code, s) }, _), default, s)
+}
+
+///|
+/// Element section
+
+fn passive(s : Stream) -> SegmentMode {
+  Passive
+}
+
+fn active(s : Stream) -> SegmentMode raise{
+  let index = var2(s)
+  let offset = const2(s)
+  Active({ index, offset })
+}
+
+fn active_zero(s : Stream) -> SegmentMode raise {
+  let index = 0
+  let offset = const2(s)
+  Active({ index, offset })
+}
+
+fn declarative(s : Stream) -> SegmentMode {
+  Declarative
+}
+
+fn elem_index(s : Stream) -> @list.List[Instr] raise{
+  let x = var2(s)
+  @list.singleton(ref_func(x))
+}
+
+fn elem_kind(s : Stream) -> RefType raise {
+  match byte(s) {
+    0x00 => FuncRefType
+    _ => fail("malformed element kind")
+  }
+}
+
+fn elem2(s : Stream) -> ElemSegment raise {
+  match u32(s) {
+    0x00 => {
+      let emode = active_zero(s)
+      let einit = vec(elem_index, s)
+      { etype: FuncRefType, einit, emode }
+    }
+    0x01 => {
+      let emode = passive(s)
+      let etype = elem_kind(s)
+      let einit = vec(elem_index, s)
+      { etype, einit, emode }
+    }
+    0x02 => {
+      let emode = active(s)
+      let etype = elem_kind(s)
+      let einit = vec(elem_index, s)
+      { etype, einit, emode }
+    }
+    0x03 => {
+      let emode = declarative(s)
+      let etype = elem_kind(s)
+      let einit = vec(elem_index, s)
+      { etype, einit, emode }
+    }
+    0x04 => {
+      let emode = active_zero(s)
+      let einit = vec(const2, s)
+      { etype: FuncRefType, einit, emode }
+    }
+    0x05 => {
+      let emode = passive(s)
+      let etype = ref_type(s)
+      let einit = vec(const2, s)
+      { etype, einit, emode }
+    }
+    0x06 => {
+      let emode = active(s)
+      let etype = ref_type(s)
+      let einit = vec(const2, s)
+      { etype, einit, emode }
+    }
+    0x07 => {
+      let emode = declarative(s)
+      let etype = ref_type(s)
+      let einit = vec(const2, s)
+      { etype, einit, emode }
+    }
+    _ => fail("malformed elements segment kind")
+  }
+}
+
+fn elem_section(s : Stream) -> @list.List[ElemSegment] raise {
+  section(ElemSection, vec(elem2, _), @list.empty(), s)
+}
+
+///|
+/// Data section
+
+fn data2(s : Stream) -> DataSegment raise {
+  match u32(s) {
+    0x00 => {
+      let dmode = active_zero(s)
+      let dinit = string(s)
+      { dinit, dmode }
+    }
+    0x01 => {
+      let dmode = passive(s)
+      let dinit = string(s)
+      { dinit, dmode }
+    }
+    0x02 => {
+      let dmode = active(s)
+      let dinit = string(s)
+      { dinit, dmode }
+    }
+    _ => fail("malformed data segment kind")
+  }
+}
+
+fn data_section(s : Stream) -> @list.List[DataSegment] raise {
+  section(DataSection, vec(data2, _), @list.empty(), s)
+}
+
+///|
+/// DataCount section
+
+fn data_count(s : Stream) -> Int? raise {
+  Some(u32(s))
+}
+
+fn data_count_section(s : Stream) -> Int? raise {
+  section(DataCountSection, data_count, None, s)
+}
+
+///|
+/// Custom section
+
+fn custom(size : Int, s : Stream) -> (Bytes, Bytes)? raise {
+  let start = pos(s)
+  let id = name(s)
+  let bs = get_string(size - (pos(s) - start), s)
+  Some((id, bs))
+}
+
+fn custom_section(s : Stream) -> (Bytes, Bytes)? raise {
+  section_with_size(CustomSection, custom, None, s)
+}
+
+fn non_custom_section(s : Stream) -> Unit? raise {
+  match id(s) {
+    None | Some(CustomSection) => None
+    _ => {
+      skip(1, s)
+      let _ = sized(skip, s)
+      Some(())
+    }
+  }
+}
+
+///|
+/// Modules
+
+fn[A, B] iterate(f : (A) -> B? raise, s : A) -> Unit raise{
+  loop f(s) {
+    None => break
+    _ => continue f(s)
+  }
+}
+
+let magic = 0x6d736100
+
+fn module_2(s : Stream) -> Module_ raise {
+  let header = word32(s)
+  require2(header == magic, s, 0, "magic header not detected")
+  let version = word32(s)
+  require2(version == 1, s, 4, "unknown binary version")
+  iterate(custom_section, s)
+  let types = type_section(s)
+  iterate(custom_section, s)
+  let imports = import_section(s)
+  iterate(custom_section, s)
+  let func_types = func_section(s)
+  iterate(custom_section, s)
+  let tables = table_section(s)
+  iterate(custom_section, s)
+  let memories = memory_section(s)
+  iterate(custom_section, s)
+  let globals = global_section(s)
+  iterate(custom_section, s)
+  let exports = export_section(s)
+  iterate(custom_section, s)
+  let start = start_section(s)
+  iterate(custom_section, s)
+  let elems = elem_section(s)
+  iterate(custom_section, s)
+  let data_count = data_count_section(s)
+  iterate(custom_section, s)
+  let func_bodies = code_section(s)
+  iterate(custom_section, s)
+  let datas = data_section(s)
+  iterate(custom_section, s)
+
+  require2(pos(s) == len(s), s, len(s), "unexpected content after last section")
+  require2(func_types.length() == func_bodies.length(), s, len(s), "function and code section have inconsistent lengths")
+  
+  let data_length = datas.length()
+  match data_count {
+    None => ()
+    Some(count) => require2(count == data_length, s, len(s), "data count and data section have inconsistent lengths")
+  }
+
+  let mut funcs = @list.new()
+  func_bodies.iter2().each((i, func_body) => {
+    let func = { ..func_body, ftype : func_types.unsafe_nth(i) }
+    funcs = funcs.prepend(func)
+  })
+  
+  {
+    types,
+    tables,
+    memories,
+    globals,
+    funcs,
+    imports,
+    exports,
+    elems,
+    datas,
+    start
+  }
+}
+
+fn decode(name : Bytes, bs : Bytes) -> Module_ raise {
+  at(module_2, stream(name, bs))
+}
+
+fn all_custom(tag : Bytes, name : Bytes, bs : Bytes) -> @list.List[Bytes] raise {
+  let s = stream(name, bs)
+  let header = word32(s)
+  require2(header == magic, s, 0, "magic header not detected")
+  let version = word32(s)
+  require2(version == 1, s, 4, "unknown binary version")
+  
+  fn collect() -> @list.List[Bytes] raise {
+    iterate(non_custom_section, s)
+    match custom_section(s) {
+      None => @list.empty()
+      Some((n, bs)) => 
+        if n == tag {
+          collect().prepend(bs)
+        } else {
+          collect()
+        }
+    }
+  }
+  collect()
+}
+
+fn decode_custom(tag : Bytes, name : Bytes, bs : Bytes) -> @list.List[Bytes] raise {
+  all_custom(tag, name, bs)
 }

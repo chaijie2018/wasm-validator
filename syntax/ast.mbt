@@ -530,7 +530,9 @@ pub typealias ValuesNum as Num
 pub typealias ValuesVec as Vec
 
 ///|
-pub typealias Array[Int] as Name
+// pub typealias Array[Int] as Name
+pub typealias Bytes as Name
+
 
 ///|
 pub enum BlockType {
@@ -547,15 +549,15 @@ pub enum InstrType {
   Unreachable // trap unconditionally
   Nop // do nothing
   Drop // forget a value
-  Select(Array[ValueType]?) // branchless conditional
-  Block(BlockType, Array[InstrType]) // execute in sequence
-  Loop(BlockType, Array[InstrType]) // loop header
-  If(BlockType, Array[InstrType], Array[InstrType]) // conditional
+  Select(@list.List[ValueType]?) // branchless conditional
+  Block(BlockType, @list.List[InstrType]) // execute in sequence
+  Loop(BlockType, @list.List[InstrType]) // loop header
+  If(BlockType, @list.List[InstrType], @list.List[InstrType]) // conditional
 
   // Branch Instructions
   Br(Var) // break to n-th surrounding label
   BrIf(Var) // conditional break
-  BrTable(Array[Var], Var) // indexed break
+  BrTable(@list.List[Var], Var) // indexed break
   Return // break from function body
 
   // Function Call Instructions
@@ -629,7 +631,7 @@ pub enum InstrType {
 // Globals & Functions
 
 ///|
-pub typealias Array[InstrType] as Const
+pub typealias @list.List[InstrType] as Const
 
 ///|
 struct GlobalT {
@@ -643,12 +645,9 @@ pub typealias GlobalT as Global
 ///|
 pub struct Func {
   ftype : Var
-  locals : Array[ValueType]
-  body : Array[InstrType]
+  locals : @list.List[ValueType]
+  body : @list.List[InstrType]
 }
-
-///|
-//pub typealias Phrase[FuncT] as Func
 
 // Tables & Memories
 
@@ -678,13 +677,13 @@ pub enum SegmentMode {
 ///|
 pub struct ElemSegment {
   etype : RefType
-  einit : Array[Const]
+  einit : @list.List[Const]
   emode : SegmentMode
 }
 
 ///|
 pub struct DataSegment {
-  dinit : String
+  dinit : Bytes
   dmode : SegmentMode
 }
 
@@ -744,16 +743,16 @@ pub typealias StartT as Start
 
 ///|
 pub struct ModuleT {
-  types : Array[Type_]
-  globals : Array[Global]
-  tables : Array[Table]
-  memories : Array[Memory]
-  funcs : Array[Func]
+  types : @list.List[Type_]
+  globals : @list.List[Global]
+  tables : @list.List[Table]
+  memories : @list.List[Memory]
+  funcs : @list.List[Func]
   start : Start?
-  elems : Array[ElemSegment]
-  datas : Array[DataSegment]
-  imports : Array[Import]
-  exports : Array[Export]
+  elems : @list.List[ElemSegment]
+  datas : @list.List[DataSegment]
+  imports : @list.List[Import]
+  exports : @list.List[Export]
 }
 
 ///|
@@ -763,23 +762,23 @@ pub typealias ModuleT as Module_
 
 ///|
 let empty_module : ModuleT = {
-  types: [],
-  globals: [],
-  tables: [],
-  memories: [],
-  funcs: [],
+  types: @list.empty(),
+  globals: @list.empty(), 
+  tables: @list.empty(),
+  memories: @list.empty(),
+  funcs: @list.empty(),
   start: None,
-  elems: [],
-  datas: [],
-  imports: [],
-  exports: [],
+  elems: @list.empty(),
+  datas: @list.empty(),
+  imports: @list.empty(),
+  exports: @list.empty(),
 }
 
 ///|
 fn func_type_for(m : Module_, x : Var) -> FuncType {
   let types = m.types
   let index = x
-  types[index]
+  types.unsafe_nth(index)
 }
 
 ///|

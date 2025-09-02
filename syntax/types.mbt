@@ -25,7 +25,7 @@ pub enum ValueType {
 } derive(Eq, Show)
 
 ///|
-pub typealias Array[ValueType] as ResultType
+pub typealias @list.List[ValueType] as ResultType
 
 ///|
 pub enum FuncType {
@@ -149,7 +149,7 @@ pub fn is_ref_type(t : ValueType) -> Bool {
 // Filter function: extract specific types from an external type list
 
 ///|
-pub fn funcs(extern_types : Array[ExternType]) -> Array[FuncType] {
+pub fn funcs(extern_types : @list.List[ExternType]) -> @list.List[FuncType] {
   extern_types.filter_map(fn(et) {
     match et {
       ExternFuncType(t) => Some(t)
@@ -159,7 +159,7 @@ pub fn funcs(extern_types : Array[ExternType]) -> Array[FuncType] {
 }
 
 ///|
-pub fn tables(extern_types : Array[ExternType]) -> Array[TableType] {
+pub fn tables(extern_types : @list.List[ExternType]) -> @list.List[TableType] {
   extern_types.filter_map(fn(et) {
     match et {
       ExternTableType(t) => Some(t)
@@ -169,7 +169,7 @@ pub fn tables(extern_types : Array[ExternType]) -> Array[TableType] {
 }
 
 ///|
-pub fn memories(extern_types : Array[ExternType]) -> Array[MemoryType] {
+pub fn memories(extern_types : @list.List[ExternType]) -> @list.List[MemoryType] {
   extern_types.filter_map(fn(et) {
     match et {
       ExternMemoryType(t) => Some(t)
@@ -179,7 +179,7 @@ pub fn memories(extern_types : Array[ExternType]) -> Array[MemoryType] {
 }
 
 ///|
-pub fn globals(extern_types : Array[ExternType]) -> Array[GlobalType] {
+pub fn globals(extern_types : @list.List[ExternType]) -> @list.List[GlobalType] {
   extern_types.filter_map(fn(et) {
     match et {
       ExternGlobalType(t) => Some(t)

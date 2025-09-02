@@ -17,7 +17,7 @@ pub enum VecOp[T] {
 }
 
 ///|
-pub typealias VecOp[String] as ValuesVec
+pub typealias VecOp[Bytes] as ValuesVec
 
 ///|
 pub fn[T1, T2, T3, T4] type_of_num(v : Op[T1, T2, T3, T4]) -> NumType {

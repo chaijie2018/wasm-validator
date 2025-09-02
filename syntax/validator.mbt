@@ -1,45 +1,45 @@
 ///|
 pub struct Context {
-  types : Array[FuncType]
-  funcs : Array[FuncType]
-  tables : Array[TableType]
-  memories : Array[MemoryType]
-  globals : Array[GlobalType]
-  elems : Array[RefType]
-  datas : Array[Unit]
-  locals : Array[ValueType]
-  results : Array[ValueType]
-  labels : Array[ResultType]
+  types : @list.List[FuncType]
+  funcs : @list.List[FuncType]
+  tables : @list.List[TableType]
+  memories : @list.List[MemoryType]
+  globals : @list.List[GlobalType]
+  elems : @list.List[RefType]
+  datas : @list.List[Unit]
+  locals : @list.List[ValueType]
+  results : @list.List[ValueType]
+  labels : @list.List[ResultType]
   refs : FreeVars
 }
 
 ///|
 let empty_context : Context = {
-  types: [],
-  funcs: [],
-  tables: [],
-  memories: [],
-  globals: [],
-  elems: [],
-  datas: [],
-  locals: [],
-  results: [],
-  labels: [],
+  types: @list.empty(),
+  funcs: @list.empty(),
+  tables: @list.empty(),
+  memories: @list.empty(),
+  globals: @list.empty(),
+  elems: @list.empty(),
+  datas: @list.empty(),
+  locals: @list.empty(),
+  results: @list.empty(),
+  labels: @list.empty(),
   refs: empty_free_vars,
 }
 
 ///|
 pub fn[T] lookup(
   category : String,
-  array : Array[T],
+  list : @list.List[T],
   x : Int,
 ) -> T raise {
   let it = x
-  if it < 0 || it >= array.length() {
+  if it < 0 || it >= list.length() {
     let msg = "unknown" + category + " " + it.to_string()
     fail(msg)
   }
-  array[it]
+  list.unsafe_nth(it)
 }
 
 ///|
@@ -112,7 +112,7 @@ pub enum Ellipses {
 } derive(Show, Eq)
 
 ///|
-pub typealias (Ellipses, Array[ValueType?]) as InferResultType
+pub typealias (Ellipses, @list.List[ValueType?]) as InferResultType
 
 ///|
 pub struct OpType {
@@ -121,12 +121,12 @@ pub struct OpType {
 }
 
 ///|
-pub fn known(ts : Array[ValueType]) -> Array[ValueType?] {
+pub fn known(ts : @list.List[ValueType]) -> @list.List[ValueType?] {
   ts.map(fn(t) { Some(t) })
 }
 
 ///|
-pub fn stack(ts : Array[ValueType]) -> InferResultType {
+pub fn stack(ts : @list.List[ValueType]) -> InferResultType {
   (NoEllipses, known(ts))
 }
 
@@ -135,8 +135,8 @@ pub fn stack(ts : Array[ValueType]) -> InferResultType {
 
 ///|
 pub fn op_no_ellipses(
-  ts1 : Array[ValueType?],
-  ts2 : Array[ValueType?],
+  ts1 : @list.List[ValueType?],
+  ts2 : @list.List[ValueType?],
 ) -> OpType {
   { ins: (NoEllipses, ts1), outs: (NoEllipses, ts2) }
 }
@@ -145,7 +145,7 @@ pub fn op_no_ellipses(
 // In OCaml source code, this function is defined as -->
 
 ///|
-pub fn op_known(ts1 : Array[ValueType], ts2 : Array[ValueType]) -> OpType {
+pub fn op_known(ts1 : @list.List[ValueType], ts2 : @list.List[ValueType]) -> OpType {
   { ins: (NoEllipses, known(ts1)), outs: (NoEllipses, known(ts2)) }
 }
 
@@ -153,7 +153,7 @@ pub fn op_known(ts1 : Array[ValueType], ts2 : Array[ValueType]) -> OpType {
 // In OCaml source code, this function is defined as -~>...
 
 ///|
-pub fn op_ellipses(ts1 : Array[ValueType?], ts2 : Array[ValueType?]) -> OpType {
+pub fn op_ellipses(ts1 : @list.List[ValueType?], ts2 : @list.List[ValueType?]) -> OpType {
   { ins: (Ellipses, ts1), outs: (Ellipses, ts2) }
 }
 
@@ -162,14 +162,14 @@ pub fn op_ellipses(ts1 : Array[ValueType?], ts2 : Array[ValueType?]) -> OpType {
 
 ///|
 pub fn op_ellipses_known(
-  ts1 : Array[ValueType],
-  ts2 : Array[ValueType],
+  ts1 : @list.List[ValueType],
+  ts2 : @list.List[ValueType],
 ) -> OpType {
   { ins: (Ellipses, known(ts1)), outs: (Ellipses, known(ts2)) }
 }
 
 ///|
-/// String conversion functions for WebAssembly types
+/// String conversion
 fn string_of_num_type(t : NumType) -> String {
   match t {
     I32Type => "i32"
@@ -220,8 +220,8 @@ fn string_of_value_types(ts : Array[ValueType]) -> String {
 }
 
 ///|
-fn string_of_result_type(ts : Array[ValueType]) -> String {
-  "[" + ts.map(string_of_value_type).join(" ") + "]"
+fn string_of_result_type(ts : @list.List[ValueType]) -> String {
+  "[" + ts.map(string_of_value_type).to_array().join(" ") + "]"
 }
 
 ///|
@@ -233,27 +233,23 @@ fn string_of_infer_type(t : ValueType?) -> String {
 }
 
 ///|
-fn string_of_infer_types(ts : Array[ValueType?]) -> String {
-  let strings = ts.map(fn(t) { string_of_infer_type(t) })
-  "[" + strings.join(" ") + "]"
+fn string_of_infer_types(ts : @list.List[ValueType?]) -> String {
+  let strs = ts.map(fn(t) { string_of_infer_type(t) })
+  "[" + strs.to_array().join(" ") + "]"
 }
 
 ///|
 /// Stack type checking functions for WebAssembly validation
 fn eq_ty(t1 : ValueType?, t2 : ValueType?) -> Bool {
-  match (t1, t2) {
-    (Some(a), Some(b)) => a == b
-    (None, _) => true
-    (_, None) => true
-  }
+  t1 == t2 || t1 == None || t2 == None
 }
 
 ///|
-fn check_stack(ts1 : Array[ValueType?], ts2 : Array[ValueType?]) -> Unit raise {
+fn check_stack(ts1 : @list.List[ValueType?], ts2 : @list.List[ValueType?]) -> Unit raise {
   let mut all_match = true
   if ts1.length() == ts2.length() {
     for i = 0; i < ts1.length() && all_match; i = i + 1 {
-      if !eq_ty(ts1[i], ts2[i]) {
+      if !eq_ty(ts1.unsafe_nth(i), ts2.unsafe_nth(i)) {
         all_match = false
       }
     }
@@ -266,24 +262,6 @@ fn check_stack(ts1 : Array[ValueType?], ts2 : Array[ValueType?]) -> Unit raise {
       string_of_infer_types(ts2),
     )
   }
-}
-
-///|
-fn array_drop(arr : Array[ValueType?], n : Int) -> Array[ValueType?] {
-  let result : Array[ValueType?] = []
-  for i = n; i < arr.length(); i = i + 1 {
-    result.push(arr[i])
-  }
-  result
-}
-
-///|
-fn array_take(arr : Array[ValueType?], n : Int) -> Array[ValueType?] {
-  let result : Array[ValueType?] = []
-  for i = 0; i < n && i < arr.length(); i = i + 1 {
-    result.push(arr[i])
-  }
-  result
 }
 
 ///|
@@ -304,25 +282,24 @@ pub fn pop(
     Ellipses => n1 - n
     NoEllipses => 0
   }
-
   // Create array with n3 None values and append the relevant part of ts2
-  let none_array = Array::make(n3, None)
-  let dropped_ts2 = array_drop(ts2, n2 - n)
+  let none_array = @list.repeat(n3, None)
+  let dropped_ts2 = ts2.drop(n2 - n)
   let check_ts2 = none_array + dropped_ts2
   check_stack(ts1, check_ts2)
   let result_ts2 = match ellip1 {
-    Ellipses => []
-    NoEllipses => array_take(ts2, n2 - n)
+    Ellipses => @list.empty()
+    NoEllipses => ts2.take(n2 - n)
   }
   (ellip2, result_ts2)
 }
 
 ///|
 test "pop" {
-  let ts1 = (NoEllipses, [Some(Num(I64Type)), Some(Num(I32Type))])
+  let ts1 = (NoEllipses, @list.of([Some(Num(I64Type)), Some(Num(I32Type))]))
   let ts2 = (
     NoEllipses,
-    [Some(Num(F32Type)), Some(Num(I64Type)), Some(Num(I32Type))],
+    @list.of([Some(Num(F32Type)), Some(Num(I64Type)), Some(Num(I32Type))]),
   )
   let result = pop(ts1, ts2)
   let (ellip, arr) = result
@@ -351,9 +328,7 @@ pub fn push(
 ///|
 pub fn peek(index : Int, stack : InferResultType) -> ValueType? {
   let (_, types) = stack
-  let types_cp = types.copy()
-  types_cp[:].rev_inplace()
-  types_cp[index]
+  types.rev().nth(index).unwrap_or(None)
 }
 
 // Type Synthesis
@@ -544,19 +519,21 @@ pub fn[T, P] check_memop(
 /// the function takes the current stack `s` as an additional argument, allowing
 /// it to "peek" when it would otherwise have to guess an input type.
 pub fn check_block_type(c : Context, bt : BlockType) -> FuncType raise {
+  let empty = @list.empty()
   match bt {
     VarBlockType(x) => type_(c, x)
-    ValBlockType(None) => FuncType([], [])
-    ValBlockType(Some(t)) => FuncType([], [t])
+    ValBlockType(None) => FuncType(empty, empty)
+    ValBlockType(Some(t)) => FuncType(empty, @list.singleton(t))
   }
 }
 
 ///|
 pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType raise {
+  let empty = @list.empty()
   match e {
-    Unreachable => op_ellipses_known([], [])
-    Nop => op_known([], [])
-    Drop => op_no_ellipses([peek(0, s)], [])
+    Unreachable => op_ellipses_known(empty, empty)
+    Nop => op_known(empty, empty)
+    Drop => op_no_ellipses(@list.singleton(peek(0, s)), @list.from_array([]))
     Select(None) => {
       let t = peek(1, s)
       let condition = match t {
@@ -570,52 +547,53 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
           string_of_infer_type(t),
         )
       }
-      op_no_ellipses([t, t, Some(Num(I32Type))], [t])
+      op_no_ellipses(@list.of([t, t, Some(Num(I32Type))]), @list.of([t]))
     }
     Select(Some(ts)) => {
       if ts.length() != 1 {
         fail("invalid result arity other than 1 is not (yet) allowed")
       }
-      let input_types = [..ts, ..ts, Num(I32Type)]
+      // let input_types = @list.of([..ts, ..ts, Num(I32Type)])
+      let input_types = ts.concat(ts).concat(@list.singleton(Num(I32Type)))
       op_known(input_types, ts)
     }
     Block(bt, es) => {
       let FuncType(ts1, ts2) = check_block_type(c, bt)
-      let new_context = { ..c, labels: [ts1] + c.labels }
+      let new_context = { ..c, labels: @list.singleton(ts1).concat(c.labels) }
       check_block(new_context, es, FuncType(ts1, ts2))
       op_known(ts1, ts2)
     }
     Loop(bt, es) => {
       let FuncType(ts1, ts2) = check_block_type(c, bt)
-      let new_context = { ..c, labels: [ts1] + c.labels }
+      let new_context = { ..c, labels: @list.singleton(ts1).concat(c.labels) }
       check_block(new_context, es, FuncType(ts1, ts2))
       op_known(ts1, ts2)
     }
     If(bt, es1, es2) => {
       let FuncType(ts1, ts2) = check_block_type(c, bt)
-      let new_context = { ..c, labels: [ts2] + c.labels }
+      let new_context = { ..c, labels: @list.singleton(ts2).concat(c.labels) }
       check_block(new_context, es1, FuncType(ts1, ts2))
       check_block(new_context, es2, FuncType(ts1, ts2))
-      let input_types = [..ts1, Num(I32Type)]
+      let input_types = ts1.concat(@list.singleton(Num(I32Type)))
       op_known(input_types, ts2)
     }
-    Br(x) => op_ellipses_known(label(c, x), [])
+    Br(x) => op_ellipses_known(label(c, x), empty)
     BrIf(x) => {
       let label_types = label(c, x)
-      let input_types = [..label_types, Num(I32Type)]
+      let input_types = label_types.concat(@list.singleton(Num(I32Type)))
       op_known(input_types, label_types)
     }
     BrTable(xs, x) => {
       let n = label(c, x).length()
-      let ts = Array::makei(n, i => peek(n - 1 - i, s))
+      let ts = @list.of(FixedArray::makei(n, i => peek(n - 1 - i, s)))
       check_stack(ts, known(label(c, x)))
       for x_prime in xs {
         check_stack(ts, known(label(c, x_prime)))
       }
-      let input_types = [..ts, Some(Num(I32Type))]
-      op_ellipses(input_types, [])
+      let input_types = ts.concat(@list.singleton(Some(Num(I32Type))))
+      op_ellipses(input_types, @list.of([]))
     }
-    Return => op_ellipses_known(c.results, [])
+    Return => op_ellipses_known(c.results, empty)
     Call(x) => {
       let FuncType(ts1, ts2) = func(c, x)
       op_known(ts1, ts2)
@@ -630,42 +608,42 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
           string_of_ref_type(t),
         )
       }
-      let input_types = [..ts1, Num(I32Type)]
+      let input_types = ts1.concat(@list.singleton(Num(I32Type)))
       op_known(input_types, ts2)
     }
-    LocalGet(x) => op_known([], [local(c, x)])
-    LocalSet(x) => op_known([local(c, x)], [])
-    LocalTee(x) => op_known([local(c, x)], [local(c, x)])
+    LocalGet(x) => op_known(empty, @list.singleton(local(c, x)))
+    LocalSet(x) => op_known(@list.singleton(local(c, x)), empty)
+    LocalTee(x) => op_known(@list.singleton(local(c, x)), @list.singleton(local(c, x)))
     GlobalGet(x) => {
       let { value_type: t, mutability: _ } = global(c, x)
-      op_known([], [t])
+      op_known(empty, @list.singleton(t))
     }
     GlobalSet(x) => {
       let { value_type: t, mutability: mutable } = global(c, x)
       if not(mutable is Mutable) {
         fail("global is immutable")
       }
-      op_known([t], [])
+      op_known(@list.singleton(t), empty)
     }
     TableGet(x) => {
       let { limits: _, ref_type: t } = table(c, x)
-      op_known([Num(I32Type)], [Ref(t)])
+      op_known(@list.singleton(Num(I32Type)), @list.singleton(Ref(t)))
     }
     TableSet(x) => {
       let { limits: _, ref_type: t } = table(c, x)
-      op_known([Num(I32Type), Ref(t)], [])
+      op_known(@list.of([Num(I32Type), Ref(t)]), empty)
     }
     TableSize(x) => {
       let _tt = table(c, x)
-      op_known([], [Num(I32Type)])
+      op_known(empty, @list.singleton(Num(I32Type)))
     }
     TableGrow(x) => {
       let { limits: _, ref_type: t } = table(c, x)
-      op_known([Ref(t), Num(I32Type)], [Num(I32Type)])
+      op_known(@list.of([Ref(t), Num(I32Type)]), @list.singleton(Num(I32Type)))
     }
     TableFill(x) => {
       let { limits: _, ref_type: t } = table(c, x)
-      op_known([Num(I32Type), Ref(t), Num(I32Type)], [])
+      op_known(@list.of([Num(I32Type), Ref(t), Num(I32Type)]), empty)
     }
     TableCopy(x, y) => {
       let { limits: _, ref_type: t1 } = table(c, x)
@@ -678,7 +656,7 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
           string_of_ref_type(t2),
         )
       }
-      op_known([Num(I32Type), Num(I32Type), Num(I32Type)], [])
+      op_known(@list.of([Num(I32Type), Num(I32Type), Num(I32Type)]), empty)
     }
     TableInit(x, y) => {
       let { limits: _, ref_type: t1 } = table(c, x)
@@ -691,68 +669,68 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
           string_of_ref_type(t2),
         )
       }
-      op_known([Num(I32Type), Num(I32Type), Num(I32Type)], [])
+      op_known(@list.of([Num(I32Type), Num(I32Type), Num(I32Type)]), empty)
     }
     ElemDrop(x) => {
       let _ = elem(c, x)
-      op_known([], [])
+      op_known(empty, empty)
     }
     Load(memop) => {
       check_memop(c, memop, num_size, fn(x) { x.map(fn(pair) { pair.0 }) })
-      op_known([Num(I32Type)], [Num(memop.ty)])
+      op_known(@list.singleton(Num(I32Type)), @list.singleton(Num(memop.ty)))
     }
     Store(memop) => {
       check_memop(c, memop, num_size, fn(sz) { sz })
-      op_known([Num(I32Type), Num(memop.ty)], [])
+      op_known(@list.of([Num(I32Type), Num(memop.ty)]), empty)
     }
     VecLoad(memop) => {
       check_memop(c, memop, vec_size, fn(x) { x.map(fn(pair) { pair.0 }) })
-      op_known([Num(I32Type)], [Vec(memop.ty)])
+      op_known(@list.singleton(Num(I32Type)), @list.singleton(Vec(memop.ty)))
     }
     VecStore(memop) => {
       check_memop(c, memop, vec_size, fn(_) { None })
-      op_known([Num(I32Type), Vec(memop.ty)], []) 
+      op_known(@list.of([Num(I32Type), Vec(memop.ty)]), empty) 
     }
     VecLoadLane((memop, i)) => {
       check_memop(c, memop, vec_size, fn(sz) { Some(sz) })
       if not(i < vec_size(memop.ty) / packed_size(memop.pack)) {
         fail("invalid lane index")
       }
-      op_known([Num(I32Type), Vec(memop.ty)], [Vec(memop.ty)])
+      op_known(@list.of([Num(I32Type), Vec(memop.ty)]), @list.singleton(Vec(memop.ty)))
     }
     VecStoreLane((memop, i)) => {
       check_memop(c, memop, vec_size, fn(sz) { Some(sz) })
       if not(i < vec_size(memop.ty) / packed_size(memop.pack)) {
         fail("invalid lane index")
       }
-      op_known([Num(I32Type), Vec(memop.ty)], [])
+      op_known(@list.of([Num(I32Type), Vec(memop.ty)]), empty)
     }
     MemorySize => {
       let _mt = memory(c, at_location(0))
-      op_known([], [Num(I32Type)])
+      op_known(empty, @list.singleton(Num(I32Type)))
     }
     MemoryGrow => {
       let _mt = memory(c, at_location(0))
-      op_known([Num(I32Type)], [Num(I32Type)])
+      op_known(@list.singleton(Num(I32Type)), @list.singleton(Num(I32Type)))
     }
     MemoryFill => {
       let _ = memory(c, at_location(0))
-      op_known([Num(I32Type), Num(I32Type), Num(I32Type)], [])
+      op_known(@list.of([Num(I32Type), Num(I32Type), Num(I32Type)]), empty)
     }
     MemoryCopy => {
       let _ = memory(c, at_location(0))
-      op_known([Num(I32Type), Num(I32Type), Num(I32Type)], [])
+      op_known(@list.of([Num(I32Type), Num(I32Type), Num(I32Type)]), empty)
     }
     MemoryInit(x) => {
       let _ = memory(c, at_location(0))
       let _ = data(c, x)
-      op_known([Num(I32Type), Num(I32Type), Num(I32Type)], [])
+      op_known(@list.of([Num(I32Type), Num(I32Type), Num(I32Type)]), empty)
     }
     DataDrop(x) => {
       let _ = data(c, x)
-      op_known([], [])
+      op_known(empty, empty)
     }
-    RefNull(t) => op_known([], [Ref(t)])
+    RefNull(t) => op_known(empty, @list.singleton(Ref(t)))
     RefIsNull => {
       let t = peek(0, s)
       if not(
@@ -767,91 +745,91 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
           string_of_infer_type(t),
         )
       }
-      op_no_ellipses([t], [Some(Num(I32Type))])
+      op_no_ellipses(@list.singleton(t), @list.singleton(Some(Num(I32Type))))
     }
     RefFunc(x) => {
       let _ = func(c, x)
       refer_func(c, x)
-      op_known([], [Ref(FuncRefType)])
+      op_known(empty, @list.singleton(Ref(FuncRefType)))
     }
     Const(v) => {
       let t = Num(type_of_num(v))
-      op_known([], [t])
+      op_known(empty, @list.singleton(t))
     }
     Test(testop) => {
       let t = Num(type_of_num(testop))
-      op_known([t], [Num(I32Type)])
+      op_known(@list.singleton(t), @list.singleton(Num(I32Type)))
     }
     Compare(relop) => {
       let t = Num(type_of_num(relop))
-      op_known([t, t], [Num(I32Type)])
+      op_known(@list.of([t, t]), @list.singleton(Num(I32Type)))
     }
     Unary(unop) => {
       check_unop(unop)
       let t = Num(type_of_num(unop))
-      op_known([t], [t])
+      op_known(@list.singleton(t), @list.singleton(t))
     }
     Binary(binop) => {
       let t = Num(type_of_num(binop))
-      op_known([t, t], [t])
+      op_known(@list.of([t, t]), @list.singleton(t))
     }
     Convert(cvtop) => {
       let (t1, t2) = type_cvtop(cvtop)
-      op_known([Num(t1)], [Num(t2)])
+      op_known(@list.singleton(Num(t1)), @list.singleton(Num(t2)))
     }
     VecConst(v) => {
       let t = Vec(type_of_vec(v))
-      op_known([], [t])
+      op_known(empty, @list.singleton(t))
     }
     VecTest(testop) => {
       let t = Vec(type_of_vec(testop))
-      op_known([t], [Num(I32Type)])
+      op_known(@list.singleton(t), @list.singleton(Num(I32Type)))
     }
     VecUnary(unop) => {
       let t = Vec(type_of_vec(unop))
-      op_known([t], [t])
+      op_known(@list.singleton(t), @list.singleton(t))
     }
     VecBinary(binop) => {
       check_vec_binop(binop)
       let t = Vec(type_of_vec(binop))
-      op_known([t, t], [t])
+      op_known(@list.of([t, t]), @list.singleton(t))
     }
     VecCompare(relop) => {
       let t = Vec(type_of_vec(relop))
-      op_known([t, t], [t])
+      op_known(@list.of([t, t]), @list.singleton(t))
     }
     VecConvert(cvtop) => {
       let t = Vec(type_of_vec(cvtop))
-      op_known([t], [t])
+      op_known(@list.singleton(t), @list.singleton(t))
     }
     VecShift(shiftop) => {
       let t = Vec(type_of_vec(shiftop))
-      op_known([t, Num(I32Type)], [Vec(V128Type)])
+      op_known(@list.of([t, Num(I32Type)]), @list.singleton(Vec(V128Type)))
     }
     VecBitmask(bitmaskop) => {
       let t = Vec(type_of_vec(bitmaskop))
-      op_known([t], [Num(I32Type)])
+      op_known(@list.singleton(t), @list.singleton(Num(I32Type)))
     }
     VecTestBits(vtestop) => {
       let t = Vec(type_of_vec(vtestop))
-      op_known([t], [Num(I32Type)])
+      op_known(@list.singleton(t), @list.singleton(Num(I32Type)))
     }
     VecUnaryBits(vunop) => {
       let t = Vec(type_of_vec(vunop))
-      op_known([t], [t])
+      op_known(@list.singleton(t), @list.singleton(t))
     }
     VecBinaryBits(vbinop) => {
       let t = Vec(type_of_vec(vbinop))
-      op_known([t, t], [t])
+      op_known(@list.of([t, t]), @list.singleton(t))
     }
     VecTernaryBits(vternop) => {
       let t = Vec(type_of_vec(vternop))
-      op_known([t, t, t], [t])
+      op_known(@list.of([t, t, t]), @list.singleton(t))
     }
     VecSplat(splatop) => {
       let t1 = type_vec_lane(splatop)
       let t2 = Vec(type_of_vec(splatop))
-      op_known([Num(t1)], [t2])
+      op_known(@list.singleton(Num(t1)), @list.singleton(t2))
     }
     VecExtract(extractop) => {
       let t = Vec(type_of_vec(extractop))
@@ -859,7 +837,7 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
       if lane_extractop(extractop) >= num_lanes(extractop) {
         fail("invalid lane index")
       }
-      op_known([t], [Num(t2)])
+      op_known(@list.singleton(t), @list.singleton(Num(t2)))
     }
     VecReplace(replaceop) => {
       let t = Vec(type_of_vec(replaceop))
@@ -867,7 +845,7 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
       if lane_replaceop(replaceop) >= num_lanes(replaceop) {
         fail("invalid lane index")
       }
-      op_known([t, Num(t2)], [t])
+      op_known(@list.of([t, Num(t2)]), @list.singleton(t))
     }
   }
 }
@@ -876,7 +854,7 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
 pub fn check_seq(
   c : Context,
   s : InferResultType,
-  es : Array[InstrType],
+  es : @list.List[InstrType],
 ) -> InferResultType raise {
   match es.length() {
     0 => s
@@ -892,7 +870,7 @@ pub fn check_seq(
 ///|
 pub fn check_block(
   c : Context,
-  es : Array[InstrType],
+  es : @list.List[InstrType],
   ft : FuncType,
   // at : Region,
 ) -> Unit raise {
@@ -910,9 +888,9 @@ pub fn check_block(
 }
 
 ///|
-fn[T] split_last(arr : Array[T]) -> (Array[T], T) {
-  let len = arr.length()
-  (arr[0:len - 1].to_array(), arr[len - 1])
+fn[T] split_last(list : @list.List[T]) -> (@list.List[T], T) {
+  let len = list.length()
+  (list.take(len - 1), list.last().unwrap())
 }
 
 ///|
@@ -1016,8 +994,8 @@ pub fn check_type(t : Type_) -> Unit {
 pub fn check_func(c : Context, f : Func) -> Unit raise {
   let { ftype, locals, body } = f
   let FuncType(ts1, ts2) = type_(c, ftype)
-  let c_prime = { ..c, locals: ts1 + locals, results: ts2, labels: [ts2] }
-  check_block(c_prime, body, FuncType([], ts2))
+  let c_prime = { ..c, locals: ts1 + locals, results: ts2, labels: @list.singleton(ts2) }
+  check_block(c_prime, body, FuncType(@list.empty(), ts2))
 }
 
 ///|
@@ -1034,10 +1012,10 @@ pub fn is_const(c : Context, e : Instr) -> Bool raise {
 
 ///|
 pub fn check_const(c : Context, cons : Const, t : ValueType) -> Unit raise {
-  if not(cons[:].any(instr => is_const(c, instr))) {
+  if not(cons.any(instr => is_const(c, instr))) {
     fail("constant expression required")
   }
-  check_block(c, cons, FuncType([], [t]))
+  check_block(c, cons, FuncType(@list.empty(), @list.singleton(t)))
 }
 
 // Tables, Memories, & Globals
@@ -1081,7 +1059,7 @@ pub fn check_elem_mode(
 ///|
 pub fn check_elem(c : Context, seg : ElemSegment) -> Unit raise {
   let { etype, einit, emode } = seg
-  einit[:].each(con => check_const(c, con, Ref(etype)))
+  einit.each(con => check_const(c, con, Ref(etype)))
   check_elem_mode(c, etype, emode)
 }
 
@@ -1115,8 +1093,8 @@ pub fn check_global(c : Context, glob : Global) -> Unit raise {
 ///|
 pub fn check_start(c : Context, start : Start) -> Unit raise {
   let { sfunc } = start
-  if not(func(c, sfunc) is FuncType([], [])) {
-    fail("start function must not have parameters or results")
+  if not(func(c, sfunc) is FuncType(list1, list2) && list1.is_empty() && list2.is_empty()) {
+    fail("start function not found")
   }
 }
 
@@ -1124,18 +1102,18 @@ pub fn check_start(c : Context, start : Start) -> Unit raise {
 pub fn check_import(im : Import, c : Context) -> Context raise {
   let { module_name, item_name, idesc } = im
   match idesc {
-    FuncImport(x) => { ..c, funcs: [type_(c, x), ..c.funcs] }
+    FuncImport(x) => { ..c, funcs: @list.construct(type_(c, x), c.funcs) }
     TableImport(tt) => {
       check_table_type(tt)
-      { ..c, tables: [tt, ..c.tables] }
+      { ..c, tables: @list.construct(tt, c.tables) }
     }
     MemoryImport(mt) => {
       check_memory_type(mt)
-      { ..c, memories: [mt, ..c.memories] }
+      { ..c, memories: @list.construct(mt, c.memories) }
     }
     GlobalImport(gt) => {
       check_global_type(gt)
-      { ..c, globals: [gt, ..c.globals] }
+      { ..c, globals: @list.construct(gt, c.globals) }
     }
   }
 }
@@ -1143,15 +1121,15 @@ pub fn check_import(im : Import, c : Context) -> Context raise {
 ///|
 pub fn check_export(
   c : Context,
-  set : Set[Array[Int]],
+  set : Set[Bytes],
   ex : Export,
-) -> Set[Array[Int]] raise {
+) -> Set[Bytes] raise {
   let { name, edesc } = ex
   match edesc {
-    FuncExport(x) => ignore(func(c, x))
-    TableExport(x) => ignore(table(c, x))
-    MemoryExport(x) => ignore(memory(c, x))
-    GlobalExport(x) => ignore(global(c, x))
+    FuncExport(x) => func(c, x) |> ignore
+    TableExport(x) => table(c, x) |> ignore
+    MemoryExport(x) => memory(c, x) |> ignore
+    GlobalExport(x) => global(c, x) |> ignore
   }
   if set.contains(name) {
     fail("duplicate export name")
@@ -1174,13 +1152,13 @@ pub fn check_module(m : Module_) -> Unit raise {
     datas,
     exports,
   } = m
-  let c0 = imports.rev_fold(
-    init={
+  let c0 = imports.to_array().rev_fold(
+    init = {
       ..empty_context,
-      refs: module_({ ..m, funcs: [], start: None }),
+      refs: module_({ ..m, funcs: @list.empty(), start: None }),
       types: types.map(ty => ty),
     },
-    (context, elem) => check_import(elem, context),
+    (context, elem) => check_import(elem, context)
   )
   let c1 = {
     ..c0,

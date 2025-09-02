@@ -116,7 +116,7 @@ fn shift(s : Set[Int]) -> Set[Int] {
 }
 
 ///|
-fn[T] list(free_fn : (T) -> FreeVars, xs : Array[T]) -> FreeVars {
+fn[T] list(free_fn : (T) -> FreeVars, xs : @list.List[T]) -> FreeVars {
   xs.fold(init=empty_free_vars, fn(acc, x) { acc + free_fn(x) })
 }
 
@@ -158,7 +158,7 @@ fn instr(e : Instr) -> FreeVars {
     Br(x) => labels(var(x))
     BrIf(x) => labels(var(x))
     BrTable(xs, x) => {
-      let all_labels = [x, ..xs]
+      let all_labels = @list.from_array([x, ..xs])
       list(fn(x) { labels(var(x)) }, all_labels)
     }
     Return => empty_free_vars
@@ -208,7 +208,7 @@ fn instr(e : Instr) -> FreeVars {
 }
 
 ///|
-fn block(es : Array[InstrType]) -> FreeVars {
+fn block(es : @list.List[InstrType]) -> FreeVars {
   let free = list(instr, es)
   { ..free, labels: shift(free.labels) }
 }
