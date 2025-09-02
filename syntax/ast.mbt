@@ -533,7 +533,6 @@ pub typealias ValuesVec as Vec
 // pub typealias Array[Int] as Name
 pub typealias Bytes as Name
 
-
 ///|
 pub enum BlockType {
   VarBlockType(Var)
@@ -763,7 +762,7 @@ pub typealias ModuleT as Module_
 ///|
 let empty_module : ModuleT = {
   types: @list.empty(),
-  globals: @list.empty(), 
+  globals: @list.empty(),
   tables: @list.empty(),
   memories: @list.empty(),
   funcs: @list.empty(),

@@ -169,7 +169,9 @@ pub fn tables(extern_types : @list.List[ExternType]) -> @list.List[TableType] {
 }
 
 ///|
-pub fn memories(extern_types : @list.List[ExternType]) -> @list.List[MemoryType] {
+pub fn memories(
+  extern_types : @list.List[ExternType],
+) -> @list.List[MemoryType] {
   extern_types.filter_map(fn(et) {
     match et {
       ExternMemoryType(t) => Some(t)

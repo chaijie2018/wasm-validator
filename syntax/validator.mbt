@@ -29,11 +29,7 @@ let empty_context : Context = {
 }
 
 ///|
-pub fn[T] lookup(
-  category : String,
-  list : @list.List[T],
-  x : Int,
-) -> T raise {
+pub fn[T] lookup(category : String, list : @list.List[T], x : Int) -> T raise {
   let it = x
   if it < 0 || it >= list.length() {
     let msg = "unknown" + category + " " + it.to_string()
@@ -105,6 +101,7 @@ pub fn require(b : Bool, s : String) -> Unit raise {
     fail("require failed")
   }
 }
+
 ///|
 pub enum Ellipses {
   NoEllipses
@@ -145,7 +142,10 @@ pub fn op_no_ellipses(
 // In OCaml source code, this function is defined as -->
 
 ///|
-pub fn op_known(ts1 : @list.List[ValueType], ts2 : @list.List[ValueType]) -> OpType {
+pub fn op_known(
+  ts1 : @list.List[ValueType],
+  ts2 : @list.List[ValueType],
+) -> OpType {
   { ins: (NoEllipses, known(ts1)), outs: (NoEllipses, known(ts2)) }
 }
 
@@ -153,7 +153,10 @@ pub fn op_known(ts1 : @list.List[ValueType], ts2 : @list.List[ValueType]) -> OpT
 // In OCaml source code, this function is defined as -~>...
 
 ///|
-pub fn op_ellipses(ts1 : @list.List[ValueType?], ts2 : @list.List[ValueType?]) -> OpType {
+pub fn op_ellipses(
+  ts1 : @list.List[ValueType?],
+  ts2 : @list.List[ValueType?],
+) -> OpType {
   { ins: (Ellipses, ts1), outs: (Ellipses, ts2) }
 }
 
@@ -245,7 +248,10 @@ fn eq_ty(t1 : ValueType?, t2 : ValueType?) -> Bool {
 }
 
 ///|
-fn check_stack(ts1 : @list.List[ValueType?], ts2 : @list.List[ValueType?]) -> Unit raise {
+fn check_stack(
+  ts1 : @list.List[ValueType?],
+  ts2 : @list.List[ValueType?],
+) -> Unit raise {
   let mut all_match = true
   if ts1.length() == ts2.length() {
     for i = 0; i < ts1.length() && all_match; i = i + 1 {
@@ -528,7 +534,11 @@ pub fn check_block_type(c : Context, bt : BlockType) -> FuncType raise {
 }
 
 ///|
-pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType raise {
+pub fn check_instr(
+  c : Context,
+  e : InstrType,
+  s : InferResultType,
+) -> OpType raise {
   let empty = @list.empty()
   match e {
     Unreachable => op_ellipses_known(empty, empty)
@@ -613,7 +623,8 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
     }
     LocalGet(x) => op_known(empty, @list.singleton(local(c, x)))
     LocalSet(x) => op_known(@list.singleton(local(c, x)), empty)
-    LocalTee(x) => op_known(@list.singleton(local(c, x)), @list.singleton(local(c, x)))
+    LocalTee(x) =>
+      op_known(@list.singleton(local(c, x)), @list.singleton(local(c, x)))
     GlobalGet(x) => {
       let { value_type: t, mutability: _ } = global(c, x)
       op_known(empty, @list.singleton(t))
@@ -689,14 +700,17 @@ pub fn check_instr(c : Context, e : InstrType, s : InferResultType) -> OpType ra
     }
     VecStore(memop) => {
       check_memop(c, memop, vec_size, fn(_) { None })
-      op_known(@list.of([Num(I32Type), Vec(memop.ty)]), empty) 
+      op_known(@list.of([Num(I32Type), Vec(memop.ty)]), empty)
     }
     VecLoadLane((memop, i)) => {
       check_memop(c, memop, vec_size, fn(sz) { Some(sz) })
       if not(i < vec_size(memop.ty) / packed_size(memop.pack)) {
         fail("invalid lane index")
       }
-      op_known(@list.of([Num(I32Type), Vec(memop.ty)]), @list.singleton(Vec(memop.ty)))
+      op_known(
+        @list.of([Num(I32Type), Vec(memop.ty)]),
+        @list.singleton(Vec(memop.ty)),
+      )
     }
     VecStoreLane((memop, i)) => {
       check_memop(c, memop, vec_size, fn(sz) { Some(sz) })
@@ -901,11 +915,7 @@ fn at_location(value : Int) -> Var {
 // Types
 
 ///|
-pub fn check_limits(
-  limits : Limits,
-  range : UInt,
-  msg : String,
-) -> Unit raise {
+pub fn check_limits(limits : Limits, range : UInt, msg : String) -> Unit raise {
   if limits.min > range {
     fail(msg)
   }
@@ -994,7 +1004,12 @@ pub fn check_type(t : Type_) -> Unit {
 pub fn check_func(c : Context, f : Func) -> Unit raise {
   let { ftype, locals, body } = f
   let FuncType(ts1, ts2) = type_(c, ftype)
-  let c_prime = { ..c, locals: ts1 + locals, results: ts2, labels: @list.singleton(ts2) }
+  let c_prime = {
+    ..c,
+    locals: ts1 + locals,
+    results: ts2,
+    labels: @list.singleton(ts2),
+  }
   check_block(c_prime, body, FuncType(@list.empty(), ts2))
 }
 
@@ -1093,7 +1108,11 @@ pub fn check_global(c : Context, glob : Global) -> Unit raise {
 ///|
 pub fn check_start(c : Context, start : Start) -> Unit raise {
   let { sfunc } = start
-  if not(func(c, sfunc) is FuncType(list1, list2) && list1.is_empty() && list2.is_empty()) {
+  if not(
+      func(c, sfunc) is FuncType(list1, list2) &&
+      list1.is_empty() &&
+      list2.is_empty(),
+    ) {
     fail("start function not found")
   }
 }
@@ -1152,14 +1171,16 @@ pub fn check_module(m : Module_) -> Unit raise {
     datas,
     exports,
   } = m
-  let c0 = imports.to_array().rev_fold(
-    init = {
-      ..empty_context,
-      refs: module_({ ..m, funcs: @list.empty(), start: None }),
-      types: types.map(ty => ty),
-    },
-    (context, elem) => check_import(elem, context)
-  )
+  let c0 = imports
+    .to_array()
+    .rev_fold(
+      init={
+        ..empty_context,
+        refs: module_({ ..m, funcs: @list.empty(), start: None }),
+        types: types.map(ty => ty),
+      },
+      (context, elem) => check_import(elem, context),
+    )
   let c1 = {
     ..c0,
     funcs: c0.funcs + funcs.map(f => type_(c0, f.ftype)),
